@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="slider" class="slider">
+<div class="thumb"></div>
+</div>
+<input id="firstspace" />
+<script>
+
+let thumb = slider.querySelector('.thumb'),
+brightness=0,
+websocket = new WebSocket("ws://127.0.0.1:8887/");
+
+
+websocket.onmessage = function (event) {
+test=JSON.parse(event.data);
+document.getElementById('firstspace').value=test.value;
+}
+
+thumb.onmousedown = function(event) {
+event.preventDefault(); // предотвратить запуск выделения (действие браузера)
+
+let shiftX = event.clientX - thumb.getBoundingClientRect().left;
+// shiftY здесь не нужен, слайдер двигается только по горизонтали
+
+document.addEventListener('mousemove', onMouseMove);
+document.addEventListener('mouseup', onMouseUp);
+
+function onMouseMove(event) {
+let newLeft = event.clientX - shiftX - slider.getBoundingClientRect().left;
+
+// курсор вышел из слайдера => оставить бегунок в его границах.
+if (newLeft < 0) {
+newLeft = 0;
+}
+let rightEdge = slider.offsetWidth - thumb.offsetWidth;
+if (newLeft > rightEdge) {
+newLeft = rightEdge;
+}
+
+brightness=Math.floor(newLeft*255/rightEdge);
+
+brightness=JSON.stringify({"brightness":brightness});
+
+websocket.send(brightness);
+
+thumb.style.left = newLeft + 'px';
+}
+
+function onMouseUp() {
+document.removeEventListener('mouseup', onMouseUp);
+document.removeEventListener('mousemove', onMouseMove);
+
+}
+
+};
+
+thumb.ondragstart = function() {
+return false;
+};
+
+
+</script>
+
+</body>
+</html>
